@@ -36,6 +36,23 @@
 {{- end }}
 {{- end }}
 
+{{- if not (.Param "hideCategories")}}
+{{- $taxonomies := site.Taxonomies.categories }}
+{{- if gt (len $taxonomies) 0 }}
+<h2 style="margin-top: 32px">{{- (.Param "categoriesTitle") | default "categories" }}</h2>
+<ul class="terms-tags">
+    {{- range $name, $value := $taxonomies }}
+    {{- $count := .Count }}
+    {{- with site.GetPage (printf "/categories/%s" $name) }}
+    <li>
+        <a class="pe-terms-badge-link" href="{{ .Permalink }}">{{ .Name }} <sup class="pe-terms-badge-circle">{{ $count }}</sup> </a>
+    </li>
+    {{- end }}
+    {{- end }}
+</ul>
+{{- end }}
+{{- end }}
+
 {{- if not (.Param "hideTags") }}
 {{- $taxonomies := .Site.Taxonomies.tags }}
 {{- if gt (len $taxonomies) 0 }}
