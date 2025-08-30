@@ -16,10 +16,6 @@
     gap: 10px;
 }
 
-.profile img {
-    border-radius: 50%;
-}
-
 .buttons {
     flex-wrap: wrap;
     max-width: 400px;
