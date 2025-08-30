@@ -1,11 +1,21 @@
 {{- with site.Params.homeInfoParams }}
 <article class="first-entry home-info">
     <header class="entry-header">
-        {{- if .imageUrl -}}
+        {{- if .heroImageUrl -}}
         {{- $img := "" }}
-        {{- if not (urls.Parse .imageUrl).IsAbs }}
-            {{- $img = resources.Get .imageUrl }}
+        {{- $imgDark := "" }}
+
+        {{- /* Process light theme image */}}
+        {{- if not (urls.Parse .heroImageUrl).IsAbs }}
+            {{- $img = resources.Get .heroImageUrl }}
         {{- end }}
+
+        {{- /* Process dark theme image */}}
+        {{- $darkImageUrl := .heroImageUrlDark | default (replace .heroImageUrl ".png" "-dark.png" | replace ".jpg" "-dark.jpg" | replace ".jpeg" "-dark.jpeg" | replace ".webp" "-dark.webp") }}
+        {{- if not (urls.Parse $darkImageUrl).IsAbs }}
+            {{- $imgDark = resources.Get $darkImageUrl }}
+        {{- end }}
+
         {{- if $img }}
             {{- $processableFormats := (slice "jpg" "jpeg" "png" "tif" "bmp" "gif") -}}
             {{- if hugo.IsExtended -}}
@@ -15,28 +25,63 @@
             {{- if and (in $processableFormats $img.MediaType.SubType) (eq $prod true)}}
                 {{- if (not (and (not .imageHeight) (not .imageWidth))) }}
                     {{- $img = $img.Resize (printf "%dx%d" .imageWidth .imageHeight) }}
+                    {{- if $imgDark }}
+                        {{- $imgDark = $imgDark.Resize (printf "%dx%d" .imageWidth .imageHeight) }}
+                    {{- end }}
                 {{- else if .imageHeight }}
                     {{- $img = $img.Resize (printf "x%d" .imageHeight) }}
+                    {{- if $imgDark }}
+                        {{- $imgDark = $imgDark.Resize (printf "x%d" .imageHeight) }}
+                    {{- end }}
                 {{ else if .imageWidth }}
                     {{- $img = $img.Resize (printf "%dx" .imageWidth) }}
+                    {{- if $imgDark }}
+                        {{- $imgDark = $imgDark.Resize (printf "%dx" .imageWidth) }}
+                    {{- end }}
                 {{ else }}
                     {{- $img = $img.Resize "150x150" }}
+                    {{- if $imgDark }}
+                        {{- $imgDark = $imgDark.Resize "150x150" }}
+                    {{- end }}
                 {{- end }}
             {{- end }}
+
+            {{- /* Preload both images for instant switching */}}
+            <link rel="preload" as="image" href="{{ $img.Permalink }}">
+            {{- if $imgDark }}
+            <link rel="preload" as="image" href="{{ $imgDark.Permalink }}">
+            {{- else }}
+            <link rel="preload" as="image" href="{{ $darkImageUrl | absURL }}">
+            {{- end }}
+
             <div class="profile">
             <div class="profile-inner">
-            <img draggable="false" src="{{ $img.Permalink }}" fetchpriority="high" alt="{{ .imageTitle | default "profile image" }}" title="{{ .imageTitle }}"
-                height="{{ .imageHeight | default 150 }}" width="{{ .imageWidth | default 150 }}" />
+            <img id="hero-image" draggable="false" fetchpriority="high" alt="{{ .imageTitle | default "profile image" }}" title="{{ .imageTitle }}"
+                height="{{ .imageHeight | default 150 }}" width="{{ .imageWidth | default 150 }}"
+                data-light-src="{{ $img.Permalink }}"
+                {{- if $imgDark }}
+                data-dark-src="{{ $imgDark.Permalink }}"
+                onload="if(window.setInitialHeroImage && !this.src) window.setInitialHeroImage(this, '{{ $img.Permalink }}', '{{ $imgDark.Permalink }}');" />
+                {{- else }}
+                data-dark-src="{{ $darkImageUrl | absURL }}"
+                onload="if(window.setInitialHeroImage && !this.src) window.setInitialHeroImage(this, '{{ $img.Permalink }}', '{{ $darkImageUrl | absURL }}');" />
+                {{- end }}
             </div>
             </div>
         {{- else }}
-        <div class="profile"></div>
-        <div class="profile-inner">
-        <img draggable="false" src="{{ .imageUrl | absURL }}" fetchpriority="high" alt="{{ .imageTitle | default "profile image" }}" title="{{ .imageTitle }}"
-            height="{{ .imageHeight | default 150 }}" width="{{ .imageWidth | default 150 }}" />
-        </div>
-        </div>
+            {{- /* Preload both images for instant switching */}}
+            <link rel="preload" as="image" href="{{ .heroImageUrl | absURL }}">
+            <link rel="preload" as="image" href="{{ $darkImageUrl | absURL }}">
 
+            <div class="profile">
+            <div class="profile-inner">
+            <img id="hero-image" draggable="false" fetchpriority="high" alt="{{ .imageTitle | default "profile image" }}" title="{{ .imageTitle }}"
+                height="{{ .imageHeight | default 150 }}" width="{{ .imageWidth | default 150 }}"
+                data-light-src="{{ .heroImageUrl | absURL }}"
+                data-dark-src="{{ $darkImageUrl | absURL }}"
+                onload="if(window.setInitialHeroImage && !this.src) window.setInitialHeroImage(this, '{{ .heroImageUrl | absURL }}', '{{ $darkImageUrl | absURL }}');" />
+            </div>
+            </div>
         {{- end }}
         {{- end }}
         <h1>{{ .Title | markdownify }}</h1>
@@ -48,4 +93,84 @@
         {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}
     </footer>
 </article>
+
+<script>
+(function() {
+    'use strict';
+
+    function getInitialTheme() {
+        {{- if (not site.Params.disableThemeToggle) }}
+        const stored = localStorage.getItem("pref-theme");
+        if (stored === "dark" || stored === "light") {
+            return stored;
+        }
+        {{- if (eq site.Params.defaultTheme "light") }}
+        return "light";
+        {{- else if (eq site.Params.defaultTheme "dark") }}
+        return "dark";
+        {{- else }}
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light";
+        {{- end }}
+        {{- else if (and (ne site.Params.defaultTheme "light") (ne site.Params.defaultTheme "dark")) }}
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light";
+        {{- else }}
+        return "{{ site.Params.defaultTheme }}";
+        {{- end }}
+    }
+
+    function setHeroImageSrc() {
+        const heroImage = document.getElementById('hero-image');
+        if (!heroImage) return;
+
+        const theme = getInitialTheme();
+        const isDark = theme === "dark";
+        const lightSrc = heroImage.getAttribute('data-light-src');
+        const darkSrc = heroImage.getAttribute('data-dark-src');
+
+        heroImage.src = (isDark && darkSrc) ? darkSrc : lightSrc;
+    }
+
+    function updateHeroImage() {
+        const heroImage = document.getElementById('hero-image');
+        if (!heroImage) return;
+
+        const isDark = document.body.classList.contains('dark');
+        const lightSrc = heroImage.getAttribute('data-light-src');
+        const darkSrc = heroImage.getAttribute('data-dark-src');
+
+        heroImage.src = (isDark && darkSrc) ? darkSrc : lightSrc;
+    }
+
+    // Set the correct image immediately when script runs
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setHeroImageSrc);
+    } else {
+        setHeroImageSrc();
+    }
+
+    // Watch for theme changes after initial load
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                updateHeroImage();
+            }
+        });
+    });
+
+    // Start observing once DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            observer.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        });
+    } else {
+        observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+})();
+</script>
 {{- end -}}
