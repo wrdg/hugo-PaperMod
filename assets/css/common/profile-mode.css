@@ -16,6 +16,21 @@
     gap: 10px;
 }
 
+img[id="hero-image"] {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Hide broken image icon */
+img[id="hero-image"]::before {
+    display: none !important;
+}
+
+img[id="hero-image"]::after {
+    display: none !important;
+}
+
 .buttons {
     flex-wrap: wrap;
     max-width: 400px;

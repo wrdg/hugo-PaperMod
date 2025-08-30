@@ -122,8 +122,7 @@
         const heroImage = document.getElementById('hero-image');
         if (!heroImage) return;
 
-        const theme = getInitialTheme();
-        const isDark = theme === "dark";
+        const isDark = window.initialTheme === "dark";
         const lightSrc = heroImage.getAttribute('data-light-src');
         const darkSrc = heroImage.getAttribute('data-dark-src');
 
@@ -140,6 +139,8 @@
 
         heroImage.src = (isDark && darkSrc) ? darkSrc : lightSrc;
     }
+
+    window.initialTheme = getInitialTheme();
 
     // Set the correct image immediately when script runs
     if (document.readyState === 'loading') {
