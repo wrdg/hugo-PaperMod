@@ -21,3 +21,14 @@
 {{- with ($scratch.Get "meta") }}
 {{- delimit . "&nbsp;·&nbsp;" | safeHTML -}}
 {{- end -}}
+
+{{- if .Params.tags }}
+<span class="post-meta-item">
+    &nbsp;·&nbsp;{{- (partial "svg.html" (dict "name" "tags")) -}}
+</span>
+<ul class="post-meta-item">
+    {{- range $index, $value := ($.GetTerms "tags") }}
+    <a href="{{ .Permalink }}">#{{ .LinkTitle }}</a>
+    {{- end }}
+</ul>
+{{- end }}
