@@ -26,7 +26,7 @@
 <span class="post-meta-item">
     &nbsp;·&nbsp;{{- partial "svg.html" (dict "name" "tags") -}}
     {{- range $index, $value := ($.GetTerms "tags") }}
-        <a href="{{ .Permalink }}">#{{ .LinkTitle }}</a>{{ if ne (add $index 1) (len ($.GetTerms "tags")) }}, {{ end }}
+        <a href="{{ .Permalink }}">#{{ .LinkTitle }}</a>{{ if ne (add $index 1) (len ($.GetTerms "tags")) }} {{ end }}
     {{- end }}
 </span>
 {{- end }}
