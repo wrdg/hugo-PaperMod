@@ -190,24 +190,29 @@
     margin-bottom: 0;
 }
 
+.post-content .chroma {
+    border-radius: var(--radius);
+}
+
 .post-content code {
-    margin: auto 4px;
-    padding: 4px 6px;
+    background-color: var(--code-bg);
+    margin: 0 3px;
+    padding: 4px 5px;
     font-size: 0.78em;
     line-height: 1.5;
     background: var(--code-bg);
-    border-radius: 2px;
+    border-radius: 3px;
+    font-family: var(--monospace);
 }
 
 .post-content pre code {
-    display: grid;
+    display: block;
     margin: auto 0;
     padding: 10px;
-    color: rgb(213, 213, 214);
-    background: var(--code-block-bg) !important;
     border-radius: var(--radius);
     overflow-x: auto;
     word-break: break-all;
+    font-family: var(--monospace);
 }
 
 .post-content blockquote {
